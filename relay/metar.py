@@ -84,7 +84,6 @@ def parse(raw: str, *, lat: float, lon: float, elev_m: int, name: str,
     i = 0
     if toks and toks[0] in ("METAR", "SPECI", "OMO"):
         out["metarType"] = toks[0]
-        out["rawOb"] = " ".join(toks[1:])        # AWC's rawOb has no METAR/SPECI prefix
         i = 1
     if i < len(toks):
         out["icaoId"] = toks[i]
