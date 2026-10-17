@@ -1,0 +1,51 @@
+name: Relay KFWQ AWOS
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"     # GitHub's minimum; runs are often a few minutes late
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: relay
+  cancel-in-progress: false
+
+jobs:
+  relay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-1.56.0
+
+      - name: Install
+        run: |
+          pip install playwright==1.56.0
+          python -m playwright install --with-deps chromium
+
+      - name: Fetch latest report
+        run: python relay/scrape.py
+
+      - name: Commit if there's a new report
+        run: |
+          git add docs
+          if git diff --cached --quiet; then
+            echo "No new report."
+            exit 0
+          fi
+          git config user.name "kfwq-relay"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "KFWQ: $(cat docs/kfwq.txt)"
+          git pull --rebase --quiet
+          git push
